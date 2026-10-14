@@ -1,0 +1,712 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Closest Pair of Points — Algorithm Comparison</title>
+<style>
+  :root{
+    --bg:#0a1020; --panel:#111a2d; --panel2:#0e1729; --line:#263550; --text:#eef4ff;
+    --muted:#9eafc9; --cyan:#4da3ff; --orange:#ff647c; --green:#65e6ab; --red:#ff7485;
+    --purple:#b79cff; --shadow:0 16px 40px rgba(0,0,0,.22);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:radial-gradient(ellipse at 15% 0%,#172849 0,transparent 38%),var(--bg);color:var(--text);font:15px/1.55 Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+  .wrap{max-width:1240px;margin:0 auto;padding:30px 22px 54px}
+  header{display:flex;align-items:flex-start;justify-content:space-between;gap:24px;margin-bottom:24px}
+  .eyebrow{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--cyan);font-weight:800}
+  h1{font-size:clamp(28px,4vw,43px);line-height:1.12;margin:8px 0 12px;letter-spacing:-.035em}
+  h2{font-size:19px;margin:0 0 12px;letter-spacing:-.015em}
+  h3{font-size:14px;margin:0 0 8px;color:#dbe7fa}
+  p{margin:0;color:var(--muted)}
+  .sub{max-width:760px;font-size:15px}
+  .pill{white-space:nowrap;border:1px solid #34556d;color:#b9f5fb;background:#123044;padding:7px 11px;border-radius:999px;font-size:12px;font-weight:750}
+  .grid{display:grid;grid-template-columns: minmax(280px, .88fr) minmax(0,1.45fr);gap:18px;align-items:start}
+  .panel{background:linear-gradient(180deg,rgba(19,29,49,.97),rgba(14,23,41,.97));border:1px solid var(--line);border-radius:17px;padding:19px;box-shadow:var(--shadow);min-width:0}
+  .panel + .panel{margin-top:18px}
+  .control-label{display:block;font-size:12px;font-weight:750;color:#c4d3e9;margin:13px 0 6px}
+  input,select,textarea,button{font:inherit}
+  input[type=number],select,textarea{background:#091224;color:var(--text);border:1px solid #2a3b58;border-radius:9px;padding:10px 11px;width:100%;outline:none}
+  input:focus,select:focus,textarea:focus{border-color:var(--cyan);box-shadow:0 0 0 3px #45d7e81a}
+  textarea{resize:vertical;min-height:156px;font:12px/1.55 ui-monospace,SFMono-Regular,Consolas,monospace;tab-size:2}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .button-row{display:flex;gap:9px;flex-wrap:wrap;margin-top:13px}
+  button{border:1px solid transparent;border-radius:9px;padding:10px 13px;cursor:pointer;font-weight:800;font-size:12px;transition:transform .12s ease,filter .12s ease}
+  button:hover{filter:brightness(1.08);transform:translateY(-1px)}
+  button:disabled{opacity:.6;cursor:wait;transform:none}
+  .primary{color:#06141c;background:var(--cyan)}
+  .secondary{background:#1a2943;border-color:#354966;color:#e3edff}
+  .ghost{background:transparent;border-color:#354966;color:#c5d5ec}
+  .mini-note{font-size:12px;color:var(--muted);margin-top:8px}
+  .section-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:13px}
+  .section-head p{font-size:12px}
+  .results{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .result-card{border-radius:13px;background:#091426;border:1px solid #263854;padding:14px;min-width:0}
+  .result-card.brute-card{background:linear-gradient(145deg,#281722,#111426);border-color:#753344}
+  .result-card.divide-card{background:linear-gradient(145deg,#10243d,#111426);border-color:#285e91}
+  .result-card.brute-card .distance{color:#ff8292}
+  .result-card.divide-card .distance{color:#68b6ff}
+  #bfPair{color:#ffc0c8} #dcPair{color:#b6d9ff}
+  .status-note{border-left:3px solid var(--green);padding:8px 10px;background:#0b1b25;border-radius:5px}
+  .status-note[data-state="error"]{border-left-color:var(--red);color:#ffc0c7;background:#28171e}
+  .python-note{margin:14px 0 10px;border:1px solid #285e91;background:#10243a;border-radius:10px;padding:12px;color:#d6eaff;font-size:13px}
+  .code-toolbar{display:flex;gap:9px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-top:12px}
+  .result-title{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:850;margin-bottom:10px}
+  .dot{width:9px;height:9px;border-radius:50%;display:inline-block;flex:0 0 auto}
+  .distance{font-size:25px;font-weight:850;letter-spacing:-.03em;font-variant-numeric:tabular-nums;margin:0 0 8px}
+  .coords{font:12px/1.55 ui-monospace,SFMono-Regular,Consolas,monospace;color:#c7d7ef;overflow-wrap:anywhere;min-height:37px}
+  .timing{font-size:12px;color:var(--muted);margin-top:8px}
+  .match-banner{margin-top:12px;padding:10px 12px;border:1px solid #265e50;border-radius:10px;background:#102b2a;color:#aaf6d8;font-size:12px;font-weight:750}
+  .match-banner.warn{border-color:#6b3b42;background:#301923;color:#ffc0c7}
+  .console{margin-top:13px;background:#07101f;border:1px solid #263854;border-radius:10px;padding:12px;color:#d8e6fb;white-space:pre-wrap;overflow-wrap:anywhere;font:12px/1.65 ui-monospace,SFMono-Regular,Consolas,monospace}
+  .canvas-wrap{background:#081222;border:1px solid #263854;border-radius:12px;overflow:hidden}
+  canvas{display:block;width:100%;height:410px}
+  #benchCanvas{height:275px}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;margin:12px 0 1px;color:#b9cbe3;font-size:11px}
+  .legend span{display:inline-flex;align-items:center;gap:7px}
+  .swatch{width:18px;height:3px;border-radius:4px;display:inline-block}
+  .swatch.dashed{background:repeating-linear-gradient(90deg,var(--orange) 0 5px,transparent 5px 8px)}
+  .swatch.solid{background:var(--cyan)}
+  .swatch.strip{height:10px;background:#b79cff2b;border:1px solid #b79cff9c}
+  .swatch.split{height:0;border-top:2px dashed #a8b7ce}
+  .metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:15px}
+  .metric{border:1px solid #273852;border-radius:10px;padding:11px;background:#0c1628}
+  .metric .v{font-size:19px;font-weight:850;font-variant-numeric:tabular-nums}
+  .metric .k{font-size:11px;color:var(--muted)}
+  .below{margin-top:18px}
+  .algo-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .algo{background:#0b1527;border:1px solid #263854;border-radius:12px;padding:15px}
+  .complexity{display:inline-block;margin:5px 0 8px;padding:4px 8px;background:#182a42;border-radius:6px;color:#d7e7fc;font:12px ui-monospace,monospace}
+  .algo p{font-size:13px}
+  details{border-top:1px solid #283853;margin-top:14px;padding-top:12px}
+  summary{cursor:pointer;color:#dbe8fb;font-weight:800;font-size:13px}
+  .code{margin-top:10px;white-space:pre-wrap;overflow-wrap:anywhere;background:#07101e;color:#bfe9ed;border:1px solid #293852;padding:14px;border-radius:9px;font:12px/1.6 ui-monospace,SFMono-Regular,Consolas,monospace}
+  .test-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:12px}
+  .test-result{border:1px solid #2b3b56;border-radius:9px;padding:9px 10px;display:flex;justify-content:space-between;gap:8px;font-size:12px;color:#dbe6f7}
+  .pass{color:var(--green);font-weight:850}.fail{color:var(--red);font-weight:850}
+  .foot{margin-top:23px;font-size:11px;color:#8295b2;text-align:center}
+  .small-tag{font-size:10px;text-transform:uppercase;letter-spacing:.09em;color:#9fb5d4;font-weight:800}
+  @media(max-width:900px){.grid{grid-template-columns:1fr}.left-column{order:1}.right-column{order:2}.panel{padding:15px}}
+  @media(max-width:560px){.wrap{padding:20px 12px 35px}header{display:block}.pill{display:inline-block;margin-top:15px}.results,.algo-grid{grid-template-columns:1fr}.metrics{grid-template-columns:1fr 1fr 1fr}.metric .v{font-size:16px}canvas{height:330px}#benchCanvas{height:250px}.test-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Closest Pair of Points</h1>
+      <p class="sub">Compare two methods for finding the minimum distance between points.</p>
+    </div>
+    <div class="pill">Interactive • Runs in your browser</div>
+  </header>
+
+  <div class="grid">
+    <div class="left-column">
+      <section class="panel">
+        <div class="section-head"><h2>1. Point input</h2><span class="small-tag">Input & test cases</span></div>
+        <div class="two">
+          <div>
+            <label class="control-label" for="pointCount">Number of points (N)</label>
+            <input id="pointCount" type="number" min="0" max="5000" value="40" />
+          </div>
+          <div>
+            <label class="control-label" for="coordType">Random coordinates</label>
+            <select id="coordType"><option value="integer">Integers</option><option value="decimal">Decimals</option></select>
+          </div>
+        </div>
+        <div class="button-row">
+          <button id="generateBtn" class="primary">Generate random points</button>
+          <button id="runBtn" class="secondary">Run both algorithms</button>
+        </div>
+        <p id="actionStatus" class="mini-note status-note" role="status" data-state="ok">Ready. Generating points automatically runs both algorithms on the same input.</p>
+        <label class="control-label" for="preset">Dummy input / corner case</label>
+        <select id="preset">
+          <option value="random">Random points (current default)</option>
+          <option value="empty">N = 0 — no points</option>
+          <option value="single">N = 1 — single point</option>
+          <option value="two">N = 2 — minimum valid input</option>
+          <option value="duplicates">Duplicate points — distance 0</option>
+          <option value="collinear">Collinear points</option>
+          <option value="sameX">Same x-coordinate (vertical line)</option>
+          <option value="sameY">Same y-coordinate (horizontal line)</option>
+          <option value="ties">Several equally close pairs</option>
+          <option value="negative">Negative and decimal coordinates</option>
+          <option value="spread">Large coordinate spread</option>
+        </select>
+        <div class="button-row"><button class="secondary" id="loadPresetBtn">Load selected case</button><button class="ghost" id="runTestsBtn">Run all edge-case tests</button></div>
+        <label class="control-label" for="pointText">Coordinates (one point per line: x, y)</label>
+        <textarea id="pointText" spellcheck="false" aria-label="Points as x, y, one per line"></textarea>
+        <div class="button-row"><button class="secondary" id="applyBtn">Apply coordinates & run</button><button class="ghost" id="copyOutputBtn">Copy output</button></div>
+        <p class="mini-note">You can edit the coordinates manually. Blank input means N = 0. Values may be integers or decimals, including negative numbers.</p>
+      </section>
+      <section class="panel">
+        <div class="section-head"><h2>2. Result comparison</h2><span class="small-tag">Console-style output</span></div>
+        <div class="results">
+          <div class="result-card brute-card">
+            <div class="result-title"><i class="dot" style="background:var(--orange)"></i> Brute-Force</div>
+            <div class="distance" id="bfDistance">—</div>
+            <div class="coords" id="bfPair">Run an input to see the closest pair.</div>
+            <div class="timing" id="bfTime">Time: — ms</div>
+          </div>
+          <div class="result-card divide-card">
+            <div class="result-title"><i class="dot" style="background:var(--cyan)"></i> Divide-and-Conquer</div>
+            <div class="distance" id="dcDistance">—</div>
+            <div class="coords" id="dcPair">Run an input to see the closest pair.</div>
+            <div class="timing" id="dcTime">Time: — ms</div>
+          </div>
+        </div>
+        <div id="agreement" class="match-banner">Run both algorithms to verify their answers.</div>
+        <pre class="console" id="consoleOutput">Brute-Force: —
+Divide-and-Conquer: —
+Execution time: —</pre>
+        <div class="metrics">
+          <div class="metric"><div class="v" id="metricN">—</div><div class="k">Points tested</div></div>
+          <div class="metric"><div class="v" id="metricGap">—</div><div class="k">Distance difference</div></div>
+          <div class="metric"><div class="v" id="metricStatus">—</div><div class="k">Agreement</div></div>
+        </div>
+      </section>
+    </div>
+
+    <div class="right-column">
+      <section class="panel">
+        <div class="section-head"><h2>3. Points visualization</h2><p id="plotCount">— points</p></div>
+        <div class="canvas-wrap"><canvas id="planeCanvas" aria-label="Scatter plot of points and closest pairs"></canvas></div>
+        <div class="legend">
+          <span><i class="swatch dashed" style="background:repeating-linear-gradient(90deg,#ff647c 0 5px,transparent 5px 8px)"></i> Brute-Force pair (pink)</span>
+          <span><i class="swatch solid" style="background:#4da3ff"></i> Divide-and-Conquer pair (blue)</span>
+          <span><i class="swatch strip"></i> Top-level strip (width 2d)</span>
+          <span><i class="swatch split"></i> Top-level dividing line</span>
+        </div>
+        <p class="mini-note">The plot shows the top-level Divide-and-Conquer split. The strip is centered on that split and has width 2d, where d is the better distance found in the two halves before checking across the split. Recursive calls use their own strips too.</p>
+      </section>
+      <section class="panel">
+        <div class="section-head"><h2>4. Running time vs N</h2><button id="benchmarkBtn" class="primary">Run benchmark</button></div>
+        <p class="mini-note" style="margin:0 0 12px">The result cards time the current input automatically. This separate benchmark tests many increasing values of N to draw the graph; it is kept separate so generating points stays fast. Times vary by device and browser load.</p>
+        <div class="canvas-wrap"><canvas id="benchCanvas" aria-label="Running time versus number of points graph"></canvas></div>
+        <div class="legend"><span><i class="swatch dashed"></i> Brute-Force — O(N²)</span><span><i class="swatch solid"></i> Divide-and-Conquer — O(N log N)</span></div>
+        <p id="benchmarkStatus" class="mini-note" role="status">Not started. Click “Run benchmark” to measure increasing input sizes.</p>
+      </section>
+    </div>
+  </div>
+
+  <section class="panel below">
+    <div class="section-head"><h2>5. Python solution and explanation</h2><span class="small-tag">Python 3 submission code</span></div>
+    <div class="python-note"><strong>Why are there two timing areas?</strong> Generating points immediately runs both algorithms on that same input, and their per-input times appear in the result cards. The running-time graph is a separate benchmark: it generates several larger inputs and measures both algorithms at each size. It is separate because a full benchmark takes longer than a single comparison.</div>
+    <p class="mini-note">The code below is the Python solution to submit. Plain HTML in a browser cannot execute CPython directly, so the interactive controls and canvas use an equivalent JavaScript implementation to keep this file working offline; the displayed Python code implements the same two algorithms.</p>
+    <div class="code-toolbar"><span class="mini-note">Input: one integer N. The program generates N random integer-coordinate points.</span><button class="secondary" id="copyPythonBtn">Copy Python code</button></div>
+    <pre id="pythonSolution" class="code">import random
+from math import sqrt
+from time import perf_counter
+
+
+def squared_distance(a, b):
+    &quot;&quot;&quot;Return the squared Euclidean distance between two (x, y) points.&quot;&quot;&quot;
+    dx = a[0] - b[0]
+    dy = a[1] - b[1]
+    return dx * dx + dy * dy
+
+
+def brute_force(points):
+    &quot;&quot;&quot;Check every pair. Returns (minimum_squared_distance, pair), or None.&quot;&quot;&quot;
+    if len(points) &lt; 2:
+        return None
+
+    best_sq = float(&quot;inf&quot;)
+    best_pair = None
+    for i in range(len(points) - 1):
+        for j in range(i + 1, len(points)):
+            d_sq = squared_distance(points[i], points[j])
+            if d_sq &lt; best_sq:
+                best_sq = d_sq
+                best_pair = (points[i], points[j])
+    return best_sq, best_pair
+
+
+def divide_and_conquer(points):
+    &quot;&quot;&quot;Closest pair in O(N log N), using x-sorted and y-sorted point lists.&quot;&quot;&quot;
+    if len(points) &lt; 2:
+        return None
+
+    # Add an ID so duplicate coordinates can still be split consistently.
+    tagged = [(float(x), float(y), i) for i, (x, y) in enumerate(points)]
+    by_x = sorted(tagged, key=lambda p: (p[0], p[1], p[2]))
+    by_y = sorted(tagged, key=lambda p: (p[1], p[0], p[2]))
+
+    def small_case(items):
+        best_sq = float(&quot;inf&quot;)
+        best_pair = None
+        for i in range(len(items) - 1):
+            for j in range(i + 1, len(items)):
+                dx = items[i][0] - items[j][0]
+                dy = items[i][1] - items[j][1]
+                d_sq = dx * dx + dy * dy
+                if d_sq &lt; best_sq:
+                    best_sq = d_sq
+                    best_pair = (items[i], items[j])
+        return best_sq, best_pair
+
+    def solve(px, py):
+        n = len(px)
+        if n &lt;= 3:
+            return small_case(px)
+
+        middle = n // 2
+        left_x, right_x = px[:middle], px[middle:]
+        left_ids = {p[2] for p in left_x}
+        left_y = [p for p in py if p[2] in left_ids]
+        right_y = [p for p in py if p[2] not in left_ids]
+        split_x = (left_x[-1][0] + right_x[0][0]) / 2.0
+
+        left_best = solve(left_x, left_y)
+        right_best = solve(right_x, right_y)
+        best_sq, best_pair = left_best if left_best[0] &lt;= right_best[0] else right_best
+        d = sqrt(best_sq)
+
+        # Only points within d of the dividing line can beat the current answer.
+        strip = [p for p in py if abs(p[0] - split_x) &lt;= d]
+        for i in range(len(strip)):
+            # In y-order, geometry means only the next seven points need checking.
+            for j in range(i + 1, min(i + 8, len(strip))):
+                dy = strip[j][1] - strip[i][1]
+                if dy * dy &gt;= best_sq:
+                    break
+                dx = strip[j][0] - strip[i][0]
+                d_sq = dx * dx + dy * dy
+                if d_sq &lt; best_sq:
+                    best_sq = d_sq
+                    best_pair = (strip[i], strip[j])
+        return best_sq, best_pair
+
+    best_sq, pair = solve(by_x, by_y)
+    if pair is None:
+        return None
+    # Drop the internal IDs; return the original coordinate format.
+    original_pair = ((pair[0][0], pair[0][1]), (pair[1][0], pair[1][1]))
+    return best_sq, original_pair
+
+
+def print_result(label, result):
+    if result is None:
+        print(f&quot;{label}: N/A | pair: N/A (N &lt; 2)&quot;)
+        return
+    distance_sq, (p, q) = result
+    distance = sqrt(distance_sq)
+    print(
+        f&quot;{label}: {distance:.6f} | &quot;
+        f&quot;({p[0]:g}, {p[1]:g}) and ({q[0]:g}, {q[1]:g})&quot;
+    )
+
+
+if __name__ == &quot;__main__&quot;:
+    # Input is N. The program generates N random integer-coordinate points.
+    n = max(0, int(input().strip() or &quot;0&quot;))
+    points = [
+        (random.randint(-100, 100), random.randint(-100, 100))
+        for _ in range(n)
+    ]
+
+    start = perf_counter()
+    brute_result = brute_force(points)
+    brute_ms = (perf_counter() - start) * 1000
+
+    start = perf_counter()
+    divide_result = divide_and_conquer(points)
+    divide_ms = (perf_counter() - start) * 1000
+
+    print_result(&quot;Brute-Force&quot;, brute_result)
+    print_result(&quot;Divide-and-Conquer&quot;, divide_result)
+    print(
+        f&quot;Execution time: Brute-Force {brute_ms:.4f} ms | &quot;
+        f&quot;Divide-and-Conquer {divide_ms:.4f} ms&quot;
+    )
+</pre>
+    <div class="section-head" style="margin-top:24px"><h2>Why the algorithms work</h2><span class="small-tag">Algorithm notes</span></div>
+    <div class="algo-grid">
+      <div class="algo">
+        <h3><i class="dot" style="background:var(--orange);margin-right:7px"></i>Brute-Force</h3>
+        <div class="complexity">Time: O(N²) · Extra space: O(1)</div>
+        <p>It checks all N(N−1)/2 pairs and keeps the shortest one. It is simple and reliable for small inputs, but the number of pairs grows quickly as N increases.</p>
+      </div>
+      <div class="algo">
+        <h3><i class="dot" style="background:var(--cyan);margin-right:7px"></i>Divide-and-Conquer</h3>
+        <div class="complexity">Time: O(N log N) · Extra space: O(N)</div>
+        <p>It sorts the points, splits them into left and right halves, recursively finds the best distance in each half, and checks only the narrow strip around the dividing line. This avoids comparing every possible pair.</p>
+      </div>
+    </div>
+    <details>
+      <summary>Why check a strip of width 2d?</summary>
+      <div style="padding-top:10px;color:var(--muted);font-size:13px">
+        <p>Let <strong>d</strong> be the smaller closest-pair distance found in the left and right halves. A cross-half pair can only be closer than d if both points are within d of the dividing line, so the relevant vertical strip has total width 2d. After sorting strip points by y-coordinate, geometry limits the number of nearby points that need checking (at most the next seven in the standard 2D algorithm).</p>
+        <p style="margin-top:8px"><strong>Why keep both methods?</strong> Brute-Force is the easy reference implementation. Divide-and-Conquer is faster for large N. Comparing their minimum distances is a practical correctness check. When multiple pairs tie, the exact pair printed can differ even though the minimum distance is correct.</p>
+      </div>
+    </details>
+    <details>
+      <summary>Corner cases and correctness notes</summary>
+      <div style="padding-top:10px;color:var(--muted);font-size:13px">
+        <p><strong>N &lt; 2:</strong> no pair exists, so the distance and pair are reported as N/A. <strong>Duplicate coordinates:</strong> minimum distance is 0. <strong>Ties:</strong> either equally close pair is correct. <strong>Same x or y / collinear points:</strong> handled without slope division. Negative and decimal coordinates are also supported by the interactive input.</p>
+        <p style="margin-top:8px">The algorithms compare squared distances internally, avoiding square roots during pair comparisons. A square root is used only when formatting the final result.</p>
+      </div>
+    </details>
+    <details>
+      <summary>Built-in edge-case test report</summary>
+      <div id="testSummary" class="mini-note">Click “Run all edge-case tests” to check the built-in cases and randomized inputs.</div>
+      <div id="testResults" class="test-grid"></div>
+    </details>
+  </section>
+  <div class="foot">HTML visualization runs offline · Python 3 submission code included · Save and reopen in a modern browser</div>
+</div>
+<script>
+(function(){
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const COLORS = {orange:'#ff647c', cyan:'#4da3ff', green:'#65e6ab', purple:'#b79cff', grid:'#1d2b43', text:'#8fa4c2', point:'#d8e2f0', split:'#f5f7ff'};
+  const TEST_CASES = {
+    empty: [],
+    single: [{x:5,y:5}],
+    two: [{x:0,y:0},{x:3,y:4}],
+    duplicates: [{x:1,y:1},{x:4,y:4},{x:1,y:1},{x:8,y:2},{x:-2,y:9}],
+    collinear: [{x:-4,y:0},{x:-1,y:0},{x:2,y:0},{x:2.5,y:0},{x:10,y:0}],
+    sameX: [{x:3,y:-5},{x:3,y:0},{x:3,y:2},{x:3,y:2.6},{x:3,y:8}],
+    sameY: [{x:-4,y:2},{x:0,y:2},{x:3,y:2},{x:3.2,y:2},{x:10,y:2}],
+    ties: [{x:0,y:0},{x:0,y:2},{x:2,y:0},{x:2,y:2}],
+    negative: [{x:-1.25,y:-3.5},{x:-1.2,y:-3.4},{x:4.75,y:2.125},{x:-8.5,y:6.2},{x:0,y:0}],
+    spread: [{x:-1000000,y:800000},{x:999999,y:-999999},{x:123456,y:123455},{x:123450,y:123450},{x:0,y:0}]
+  };
+  let points = [];
+  let lastBenchmark = [];
+  let latestBF = null, latestDC = null;
+  let latestBFTime = 0, latestDCTime = 0;
+  let latestDCMeta = null;
+
+  function dist2(a,b){const dx=a.x-b.x,dy=a.y-b.y;return dx*dx+dy*dy;}
+  function bruteForce(pts){
+    if(pts.length<2) return {distance2:Infinity,pair:null};
+    let best=Infinity, pair=null;
+    for(let i=0;i<pts.length-1;i++) for(let j=i+1;j<pts.length;j++){
+      const d=dist2(pts[i],pts[j]);
+      if(d<best){best=d;pair=[pts[i],pts[j]];}
+    }
+    return {distance2:best,pair};
+  }
+  function divideAndConquer(pts){
+    if(pts.length<2) return {distance2:Infinity,pair:null,meta:null};
+    const px=pts.slice().sort((a,b)=>a.x-b.x||a.y-b.y||a.id-b.id);
+    const py=pts.slice().sort((a,b)=>a.y-b.y||a.x-b.x||a.id-b.id);
+    function recurse(xList,yList,isRoot){
+      const n=xList.length;
+      if(n<=3) return bruteForce(xList);
+      const mid=Math.floor(n/2);
+      const leftX=xList.slice(0,mid), rightX=xList.slice(mid);
+      const leftIds=new Set(leftX.map(p=>p.id));
+      const leftY=[],rightY=[];
+      for(const p of yList)(leftIds.has(p.id)?leftY:rightY).push(p);
+      // Place the line between the last point in the left half and first in the right half.
+      const splitX=(xList[mid-1].x+xList[mid].x)/2;
+      const L=recurse(leftX,leftY,false), R=recurse(rightX,rightY,false);
+      let best=L.distance2<=R.distance2?L:R;
+      const initialD=Math.sqrt(best.distance2);
+      const strip= yList.filter(p=>Math.abs(p.x-splitX)<=initialD);
+      for(let i=0;i<strip.length;i++){
+        // Geometric packing bound: only the next seven points need checking.
+        for(let j=i+1;j<strip.length && j<=i+7;j++){
+          const dy=strip[j].y-strip[i].y;
+          if(dy*dy>=best.distance2) break;
+          const d=dist2(strip[i],strip[j]);
+          if(d<best.distance2) best={distance2:d,pair:[strip[i],strip[j]]};
+        }
+      }
+      if(isRoot) best={...best,meta:{splitX,halfWidth:initialD,stripIds:new Set(strip.map(p=>p.id)),leftSize:leftX.length,rightSize:rightX.length,preStripDistance:initialD}};
+      return best;
+    }
+    return recurse(px,py,true);
+  }
+  function fmtCoord(v){
+    if(Object.is(v,-0)) v=0;
+    if(Number.isInteger(v)) return String(v);
+    return Number(v.toFixed(6)).toString();
+  }
+  function fmtPoint(p){return p?`(${fmtCoord(p.x)}, ${fmtCoord(p.y)})`:'N/A';}
+  function fmtDistance(d){return Number.isFinite(d)?d.toFixed(6):'N/A';}
+  function fmtResultLine(name,res){
+    if(!res || !res.pair) return `${name}: N/A (need at least 2 points) | pair: N/A`;
+    return `${name}: ${Math.sqrt(res.distance2).toFixed(6)} | ${fmtPoint(res.pair[0])} and ${fmtPoint(res.pair[1])}`;
+  }
+  function agree(a,b){
+    if(!a||!b)return false;
+    if(!Number.isFinite(a.distance2)||!Number.isFinite(b.distance2)) return a.distance2===b.distance2;
+    const da=Math.sqrt(a.distance2), db=Math.sqrt(b.distance2);
+    return Math.abs(da-db)<=1e-9*Math.max(1,Math.abs(da),Math.abs(db));
+  }
+  function parsePoints(text){
+    const lines=text.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+    const out=[];
+    for(let i=0;i<lines.length;i++){
+      const bits=lines[i].split(/[\s,;]+/).filter(Boolean);
+      if(bits.length!==2) throw new Error(`Line ${i+1}: enter exactly two values, such as 3, 4.`);
+      const x=Number(bits[0]),y=Number(bits[1]);
+      if(!Number.isFinite(x)||!Number.isFinite(y)) throw new Error(`Line ${i+1}: coordinates must be finite numbers.`);
+      out.push({x,y,id:out.length});
+    }
+    if(out.length>5000) throw new Error('Please use 5,000 points or fewer in the interactive visualizer.');
+    return out;
+  }
+  function serializePoints(pts){return pts.map(p=>`${fmtCoord(p.x)}, ${fmtCoord(p.y)}`).join('\n');}
+  function randPoint(i,type){
+    let x,y;
+    if(type==='decimal') {x=Math.round((Math.random()*200-100)*100)/100;y=Math.round((Math.random()*200-100)*100)/100;}
+    else {x=Math.floor(Math.random()*201)-100;y=Math.floor(Math.random()*201)-100;}
+    return {x,y,id:i};
+  }
+  function setActionStatus(message, isError=false){
+    const el=$('actionStatus');
+    if(!el)return;
+    el.textContent=message;
+    el.dataset.state=isError?'error':'ok';
+  }
+  function setPoints(pts,updateTextarea=true,reason='Loaded points'){
+    points=pts.map((p,i)=>({x:Number(p.x),y:Number(p.y),id:i}));
+    $('pointCount').value=points.length;
+    if(updateTextarea) $('pointText').value=serializePoints(points);
+    runComparison(reason);
+  }
+  function generateRandom(){
+    let n=Number.parseInt($('pointCount').value,10);
+    if(!Number.isFinite(n)) n=40;
+    n=Math.max(0,Math.min(5000,n));
+    $('pointCount').value=n;
+    const type=$('coordType').value;
+    const pts=Array.from({length:n},(_,i)=>randPoint(i,type));
+    setPoints(pts,true,'Generated random points and timed both algorithms on this input.');
+  }
+  function loadPreset(){
+    const key=$('preset').value;
+    if(key==='random'){generateRandom();return;}
+    setPoints((TEST_CASES[key]||[]).map(p=>({...p})),true,`Loaded corner case “${$('preset').selectedOptions[0].text}” and timed both algorithms.`);
+  }
+  function measuredRun(fn, pts){
+    // Average a few calls for small inputs so sub-millisecond runs are less noisy.
+    const repeats=pts.length<150?5:(pts.length<800?2:1);
+    let result=null;
+    const start=performance.now();
+    for(let i=0;i<repeats;i++) result=fn(pts);
+    return {result,ms:(performance.now()-start)/repeats};
+  }
+  function runComparison(reason='Ran both algorithms on the current input.'){
+    let parsed;
+    try {parsed=parsePoints($('pointText').value);} catch(e){showError(e.message);return;}
+    points=parsed;
+    $('pointCount').value=points.length;
+    try{
+      const bf=measuredRun(bruteForce,points);
+      const dc=measuredRun(divideAndConquer,points);
+      latestBF=bf.result;latestBFTime=bf.ms;
+      latestDC=dc.result;latestDCTime=dc.ms;
+      latestDCMeta=latestDC.meta||null;
+      updateResults();drawPlane();
+      setActionStatus(`${reason} Brute-Force and Divide-and-Conquer ran on the same ${points.length} point(s); timings are shown in the result cards.`);
+    }catch(e){showError(`Could not run the algorithms: ${e.message}`);}
+  }
+  function showError(msg){
+    $('agreement').textContent=msg;$('agreement').classList.add('warn');
+    $('consoleOutput').textContent=`Error: ${msg}`;
+    setActionStatus(msg,true);
+  }
+  function updateResults(){
+    const bfD=latestBF&&latestBF.pair?Math.sqrt(latestBF.distance2):Infinity;
+    const dcD=latestDC&&latestDC.pair?Math.sqrt(latestDC.distance2):Infinity;
+    $('bfDistance').textContent=fmtDistance(bfD);
+    $('dcDistance').textContent=fmtDistance(dcD);
+    $('bfPair').textContent=latestBF&&latestBF.pair?`${fmtPoint(latestBF.pair[0])}  ↔  ${fmtPoint(latestBF.pair[1])}`:'No pair exists for N < 2.';
+    $('dcPair').textContent=latestDC&&latestDC.pair?`${fmtPoint(latestDC.pair[0])}  ↔  ${fmtPoint(latestDC.pair[1])}`:'No pair exists for N < 2.';
+    $('bfTime').textContent=`Time: ${latestBFTime.toFixed(4)} ms`;
+    $('dcTime').textContent=`Time: ${latestDCTime.toFixed(4)} ms`;
+    const ok=agree(latestBF,latestDC);
+    $('agreement').classList.toggle('warn',!ok);
+    $('agreement').textContent=ok?(points.length<2?'✓ Both algorithms agree: no pair exists when N < 2.':'✓ Verified: both algorithms agree on the minimum distance. The selected pairs may differ when there is a tie.'):'⚠ The algorithms disagree. Please report this input as a bug.';
+    $('consoleOutput').textContent=`${fmtResultLine('Brute-Force',latestBF)}\n${fmtResultLine('Divide-and-Conquer',latestDC)}\nExecution time: Brute-Force ${latestBFTime.toFixed(4)} ms | Divide-and-Conquer ${latestDCTime.toFixed(4)} ms`;
+    $('metricN').textContent=points.length.toLocaleString();
+    $('metricGap').textContent=Number.isFinite(bfD)&&Number.isFinite(dcD)?Math.abs(bfD-dcD).toExponential(2):'N/A';
+    $('metricStatus').textContent=ok?'PASS':'FAIL';
+    $('metricStatus').style.color=ok?'var(--green)':'var(--red)';
+    $('plotCount').textContent=`${points.length.toLocaleString()} point${points.length===1?'':'s'}`;
+  }
+  function setupCanvas(canvas){
+    const rect=canvas.getBoundingClientRect();
+    const dpr=Math.max(1,Math.min(2,window.devicePixelRatio||1));
+    const w=Math.max(260,rect.width),h=Math.max(200,rect.height);
+    if(canvas.width!==Math.round(w*dpr)||canvas.height!==Math.round(h*dpr)){canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr);}
+    const ctx=canvas.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);
+    return {ctx,w,h};
+  }
+  function drawPlane(){
+    const canvas=$('planeCanvas'),{ctx,w,h}=setupCanvas(canvas);
+    ctx.clearRect(0,0,w,h);ctx.fillStyle='#081222';ctx.fillRect(0,0,w,h);
+    if(!points.length){ctx.fillStyle=COLORS.text;ctx.font='14px system-ui';ctx.textAlign='center';ctx.fillText('No points to plot — load a test case or generate points.',w/2,h/2);return;}
+    let xmin=Math.min(...points.map(p=>p.x)),xmax=Math.max(...points.map(p=>p.x));
+    let ymin=Math.min(...points.map(p=>p.y)),ymax=Math.max(...points.map(p=>p.y));
+    if(xmin===xmax){xmin-=1;xmax+=1;} if(ymin===ymax){ymin-=1;ymax+=1;}
+    const xp=(xmax-xmin)*.08,yp=(ymax-ymin)*.08; xmin-=xp;xmax+=xp;ymin-=yp;ymax+=yp;
+    const pad={l:52,r:20,t:22,b:40},pw=w-pad.l-pad.r,ph=h-pad.t-pad.b;
+    const sx=x=>pad.l+(x-xmin)/(xmax-xmin)*pw;
+    const sy=y=>pad.t+ph-(y-ymin)/(ymax-ymin)*ph;
+    ctx.font='10px ui-monospace,monospace';ctx.lineWidth=1;
+    for(let i=0;i<=5;i++){
+      const x=pad.l+pw*i/5;ctx.strokeStyle=COLORS.grid;ctx.beginPath();ctx.moveTo(x,pad.t);ctx.lineTo(x,pad.t+ph);ctx.stroke();
+      const xv=xmin+(xmax-xmin)*i/5;ctx.fillStyle=COLORS.text;ctx.textAlign='center';ctx.fillText(Number(xv.toPrecision(5)).toString(),x,pad.t+ph+19);
+      const y=pad.t+ph-ph*i/5;ctx.strokeStyle=COLORS.grid;ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(pad.l+pw,y);ctx.stroke();
+      const yv=ymin+(ymax-ymin)*i/5;ctx.fillStyle=COLORS.text;ctx.textAlign='right';ctx.fillText(Number(yv.toPrecision(5)).toString(),pad.l-8,y+3);
+    }
+    // Shade the top-level strip: x = splitX +/- the best distance from the two halves.
+    if(latestDCMeta&&Number.isFinite(latestDCMeta.halfWidth)){
+      const a=sx(latestDCMeta.splitX-latestDCMeta.halfWidth),b=sx(latestDCMeta.splitX+latestDCMeta.halfWidth);
+      ctx.fillStyle='rgba(183,156,255,.13)';ctx.fillRect(Math.max(pad.l,a),pad.t,Math.max(0,Math.min(pad.l+pw,b)-Math.max(pad.l,a)),ph);
+      ctx.strokeStyle='rgba(183,156,255,.7)';ctx.lineWidth=1;ctx.beginPath();
+      if(a>=pad.l&&a<=pad.l+pw){ctx.moveTo(a,pad.t);ctx.lineTo(a,pad.t+ph);}
+      if(b>=pad.l&&b<=pad.l+pw){ctx.moveTo(b,pad.t);ctx.lineTo(b,pad.t+ph);}
+      ctx.stroke();
+      const split=sx(latestDCMeta.splitX);ctx.strokeStyle=COLORS.split;ctx.setLineDash([5,5]);ctx.beginPath();ctx.moveTo(split,pad.t);ctx.lineTo(split,pad.t+ph);ctx.stroke();ctx.setLineDash([]);
+      ctx.fillStyle='#d8ccff';ctx.textAlign='left';ctx.font='10px system-ui';ctx.fillText(`strip width 2d = ${(2*latestDCMeta.halfWidth).toPrecision(4)}`,pad.l+7,pad.t+13);
+    }
+    // Draw the two reported pair segments. When they are the same pair, slight pixel offsets make both styles visible.
+    const samePair=latestBF&&latestDC&&latestBF.pair&&latestDC.pair&&new Set(latestBF.pair.map(p=>p.id)).size===2&&latestBF.pair.every(p=>latestDC.pair.some(q=>q.id===p.id));
+    function drawPair(result,color,dash,offset){
+      if(!result||!result.pair)return;
+      const [p,q]=result.pair;let x1=sx(p.x),y1=sy(p.y),x2=sx(q.x),y2=sy(q.y);
+      if(offset){const dx=x2-x1,dy=y2-y1,len=Math.hypot(dx,dy)||1;const ox=-dy/len*offset,oy=dx/len*offset;x1+=ox;y1+=oy;x2+=ox;y2+=oy;}
+      ctx.strokeStyle=color;ctx.lineWidth=2.8;ctx.setLineDash(dash);ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();ctx.setLineDash([]);
+    }
+    drawPair(latestBF,COLORS.orange,[7,5],samePair?2:0);
+    drawPair(latestDC,COLORS.cyan,[],samePair?-2:0);
+    // Plot every input point.
+    for(const p of points){
+      const x=sx(p.x),y=sy(p.y);
+      if(latestDCMeta&&latestDCMeta.stripIds&&latestDCMeta.stripIds.has(p.id)){ctx.beginPath();ctx.arc(x,y,5.3,0,Math.PI*2);ctx.strokeStyle='rgba(183,156,255,.85)';ctx.lineWidth=1.2;ctx.stroke();}
+      ctx.beginPath();ctx.arc(x,y,2.8,0,Math.PI*2);ctx.fillStyle=COLORS.point;ctx.fill();ctx.strokeStyle='#081222';ctx.lineWidth=.8;ctx.stroke();
+    }
+    function highlightPair(result,color,radius){if(!result||!result.pair)return;for(const p of result.pair){const x=sx(p.x),y=sy(p.y);ctx.beginPath();ctx.arc(x,y,radius,0,Math.PI*2);ctx.strokeStyle=color;ctx.lineWidth=2.6;ctx.stroke();ctx.beginPath();ctx.arc(x,y,2.5,0,Math.PI*2);ctx.fillStyle=color;ctx.fill();}}
+    // Concentric rings keep both colours visible when both algorithms select the same pair.
+    highlightPair(latestBF,COLORS.orange,7.2);highlightPair(latestDC,COLORS.cyan,10.0);
+    ctx.fillStyle=COLORS.text;ctx.font='10px system-ui';ctx.textAlign='center';ctx.fillText('x-coordinate',pad.l+pw/2,h-7);
+    ctx.save();ctx.translate(13,pad.t+ph/2);ctx.rotate(-Math.PI/2);ctx.fillText('y-coordinate',0,0);ctx.restore();
+  }
+  function drawBenchmark(data){
+    const canvas=$('benchCanvas'),{ctx,w,h}=setupCanvas(canvas);ctx.clearRect(0,0,w,h);ctx.fillStyle='#081222';ctx.fillRect(0,0,w,h);
+    const pad={l:52,r:17,t:18,b:38},pw=w-pad.l-pad.r,ph=h-pad.t-pad.b;
+    if(!data||!data.length){ctx.fillStyle=COLORS.text;ctx.font='13px system-ui';ctx.textAlign='center';ctx.fillText('Run benchmark to draw the comparison graph.',w/2,h/2);return;}
+    const maxN=Math.max(...data.map(d=>d.n)),minN=0;
+    const maxT=Math.max(...data.flatMap(d=>[d.bf,d.dc]),0.001)*1.15;
+    ctx.font='10px ui-monospace,monospace';
+    for(let i=0;i<=4;i++){
+      const y=pad.t+ph-ph*i/4;ctx.strokeStyle=COLORS.grid;ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(pad.l+pw,y);ctx.stroke();ctx.fillStyle=COLORS.text;ctx.textAlign='right';ctx.fillText((maxT*i/4).toFixed(maxT<1?3:1),pad.l-7,y+3);
+    }
+    for(let n=0;n<=maxN;n+=Math.max(1,Math.round(maxN/5/50)*50)){
+      if(n===0)continue;const x=pad.l+(n-minN)/(maxN-minN||1)*pw;ctx.strokeStyle='#17253b';ctx.beginPath();ctx.moveTo(x,pad.t);ctx.lineTo(x,pad.t+ph);ctx.stroke();ctx.fillStyle=COLORS.text;ctx.textAlign='center';ctx.fillText(String(n),x,pad.t+ph+17);
+    }
+    function point(d,key){return {x:pad.l+d.n/maxN*pw,y:pad.t+ph-d[key]/maxT*ph};}
+    function series(key,color,dash){ctx.strokeStyle=color;ctx.lineWidth=2.2;ctx.setLineDash(dash);ctx.beginPath();data.forEach((d,i)=>{const p=point(d,key);if(i===0)ctx.moveTo(p.x,p.y);else ctx.lineTo(p.x,p.y);});ctx.stroke();ctx.setLineDash([]);data.forEach(d=>{const p=point(d,key);ctx.beginPath();ctx.arc(p.x,p.y,3,0,Math.PI*2);ctx.fillStyle=color;ctx.fill();});}
+    series('bf',COLORS.orange,[6,4]);series('dc',COLORS.cyan,[]);
+    ctx.fillStyle=COLORS.text;ctx.font='10px system-ui';ctx.textAlign='center';ctx.fillText('Number of points (N)',pad.l+pw/2,h-6);
+    ctx.save();ctx.translate(12,pad.t+ph/2);ctx.rotate(-Math.PI/2);ctx.fillText('Time (ms)',0,0);ctx.restore();
+  }
+  function benchRandom(n){return Array.from({length:n},(_,i)=>({x:Math.random()*2000-1000,y:Math.random()*2000-1000,id:i}));}
+  async function runBenchmark(){
+    const btn=$('benchmarkBtn');btn.disabled=true;$('benchmarkStatus').textContent='Benchmark running…';
+    await new Promise(resolve=>setTimeout(resolve,0));
+    try{
+      const sizes=[50,100,200,400,800,1200,1800,2500], results=[];
+      for(const n of sizes){
+        $('benchmarkStatus').textContent=`Measuring N = ${n}…`;
+        await new Promise(resolve=>setTimeout(resolve,0));
+        const sample=benchRandom(n);
+        // Two passes reduce timer noise without making the demo excessively slow.
+        let bsum=0,dsum=0,allOk=true;
+        for(let r=0;r<2;r++){
+          let t=performance.now();const b=bruteForce(sample);bsum+=performance.now()-t;
+          t=performance.now();const d=divideAndConquer(sample);dsum+=performance.now()-t;
+          if(!agree(b,d))allOk=false;
+        }
+        results.push({n,bf:bsum/2,dc:dsum/2,ok:allOk});
+      }
+      lastBenchmark=results;drawBenchmark(results);
+      const good=results.every(r=>r.ok);
+      $('benchmarkStatus').textContent=`Complete: ${results.length} input sizes (${sizes.join(', ')}). Distance agreement: ${good?'PASS for every size':'FAILED on one or more sizes'}. The graph is based on separate generated test sets.`;
+      setActionStatus(`Benchmark complete. Both methods agreed at all tested sizes: ${good?'yes':'no'}. Current result-card timings still refer to the currently loaded input.`);
+    }catch(e){$('benchmarkStatus').textContent=`Benchmark error: ${e.message}`;setActionStatus(`Benchmark error: ${e.message}`,true);}
+    finally{btn.disabled=false;}
+  }
+  async function runAllTests(){
+    const btn=$('runTestsBtn');
+    btn.disabled=true;
+    $('testSummary').textContent='Running edge-case and randomized checks…';
+    setActionStatus('Running the built-in edge-case test suite…');
+    await new Promise(resolve=>setTimeout(resolve,10));
+    try{
+      const cases=[
+        ['N = 0 (empty)',[]],['N = 1 (single point)',TEST_CASES.single],['N = 2',TEST_CASES.two],
+        ['Duplicate pair',TEST_CASES.duplicates],['All points duplicated',[{x:7,y:7},{x:7,y:7},{x:7,y:7}]],
+        ['Collinear points',TEST_CASES.collinear],['Same x / vertical',TEST_CASES.sameX],
+        ['Same y / horizontal',TEST_CASES.sameY],['Equal-distance ties',TEST_CASES.ties],
+        ['Negative / decimal',TEST_CASES.negative],['Large coordinate spread',TEST_CASES.spread]
+      ];
+      const results=cases.map(([name,pts])=>{
+        const data=pts.map((p,i)=>({...p,id:i}));
+        const b=bruteForce(data),d=divideAndConquer(data);
+        return {name,ok:agree(b,d),n:data.length};
+      });
+      let randomOk=true;
+      for(let trial=0;trial<60;trial++){
+        const n=Math.floor(Math.random()*36);
+        const sample=Array.from({length:n},(_,i)=>({x:Math.floor(Math.random()*31)-15,y:Math.floor(Math.random()*31)-15,id:i}));
+        if(!agree(bruteForce(sample),divideAndConquer(sample))){randomOk=false;break;}
+      }
+      results.push({name:'60 randomized cross-checks',ok:randomOk,n:60});
+      const passed=results.filter(r=>r.ok).length;
+      $('testSummary').textContent=`${passed} of ${results.length} checks passed. Tests compare minimum distance, not pair identity, because tied closest pairs can be different but equally correct.`;
+      $('testResults').innerHTML='';
+      for(const r of results){
+        const div=document.createElement('div');div.className='test-result';
+        const name=document.createElement('span');name.textContent=`${r.name} · ${r.name.includes('randomized')?'runs':`N=${r.n}`}`;
+        const status=document.createElement('span');status.className=r.ok?'pass':'fail';status.textContent=r.ok?'PASS':'FAIL';
+        div.append(name,status);$('testResults').append(div);
+      }
+      $('testSummary').style.color=passed===results.length?'var(--green)':'var(--red)';
+      $('testResults').closest('details').open=true;
+      setActionStatus(passed===results.length?`Edge-case suite passed (${passed}/${results.length}), including 60 randomized cross-checks.`:`Edge-case suite has failures (${passed}/${results.length} passed).`,passed!==results.length);
+    }catch(e){
+      $('testSummary').textContent=`Test suite error: ${e.message}`;
+      setActionStatus(`Test suite error: ${e.message}`,true);
+    }finally{btn.disabled=false;}
+  }
+  async function copyOutput(){
+    const text=$('consoleOutput').textContent;
+    try{await navigator.clipboard.writeText(text);$('copyOutputBtn').textContent='Copied!';setTimeout(()=>{$('copyOutputBtn').textContent='Copy output';},1300);}
+    catch(e){const range=document.createRange();range.selectNodeContents($('consoleOutput'));const sel=window.getSelection();sel.removeAllRanges();sel.addRange(range);$('copyOutputBtn').textContent='Select output, then copy';}
+  }
+  async function copyPython(){
+    const source=$('pythonSolution').textContent;
+    const btn=$('copyPythonBtn');
+    try{await navigator.clipboard.writeText(source);btn.textContent='Python code copied!';setTimeout(()=>{btn.textContent='Copy Python code';},1300);}
+    catch(e){
+      const range=document.createRange();range.selectNodeContents($('pythonSolution'));
+      const sel=window.getSelection();sel.removeAllRanges();sel.addRange(range);
+      btn.textContent='Code selected — press Ctrl+C';
+    }
+  }
+  $('generateBtn').addEventListener('click',generateRandom);
+  $('runBtn').addEventListener('click',()=>runComparison('Manual run complete.'));
+  $('loadPresetBtn').addEventListener('click',loadPreset);
+  $('applyBtn').addEventListener('click',()=>runComparison('Custom coordinates applied.'));
+  $('runTestsBtn').addEventListener('click',runAllTests);
+  $('benchmarkBtn').addEventListener('click',runBenchmark);
+  $('copyOutputBtn').addEventListener('click',copyOutput);
+  $('copyPythonBtn').addEventListener('click',copyPython);
+  $('pointCount').addEventListener('keydown',e=>{if(e.key==='Enter')generateRandom();});
+  window.addEventListener('resize',()=>{drawPlane();drawBenchmark(lastBenchmark);});
+  // Start with a reproducible illustrative point cloud.
+  points=Array.from({length:40},(_,i)=>({x:Math.round((Math.random()*100-50)*100)/100,y:Math.round((Math.random()*100-50)*100)/100,id:i}));
+  $('pointText').value=serializePoints(points);
+  runComparison('Initial sample loaded.');drawBenchmark([]);
+})();
+</script>
+</body>
+</html>

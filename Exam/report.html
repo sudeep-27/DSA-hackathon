@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Exam Timetable Report</title>
+<style>
+  :root { --ink:#1f2328; --muted:#636c76; --line:#d8dee4; --bg:#f6f8fa; --card:#fff; --accent:#0969da; }
+  * { box-sizing: border-box; }
+  body { margin:0; font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; color:var(--ink); background:var(--bg); }
+  main { max-width:1180px; overflow-wrap:anywhere; margin:0 auto; padding:24px 16px 60px; }
+  h1 { margin:0 0 4px; font-size:26px; }
+  h2 { font-size:18px; margin:0 0 12px; }
+  .sub { color:var(--muted); margin:0 0 20px; }
+  section { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:18px; margin-bottom:18px; }
+  table.data { border-collapse:collapse; width:100%; }
+  table.data th, table.data td { text-align:left; padding:8px 10px; border-bottom:1px solid var(--line); }
+  table.data th { font-size:13px; color:var(--muted); font-weight:600; }
+  table.data td.num { text-align:right; font-variant-numeric:tabular-nums; }
+  table.data tr.pick { cursor:pointer; }
+  table.data tr.pick:hover { background:#f3f6f9; }
+  table.data tr.sel { background:#eaf3ff; }
+  .badge { display:inline-block; padding:1px 9px; border-radius:20px; font-size:12px; font-weight:600; }
+  .yes { background:#dafbe1; color:#116329; } .no { background:#fff1e5; color:#953800; }
+  .tabs { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:14px; }
+  button { font:inherit; font-size:14px; border:1px solid var(--line); background:#fff; border-radius:6px; padding:5px 12px; cursor:pointer; }
+  button:hover { background:#f3f6f9; }
+  .tabs button.on { background:var(--accent); color:#fff; border-color:var(--accent); }
+  .viz { display:grid; grid-template-columns: minmax(0,1.15fr) minmax(0,1fr); gap:16px; }
+  .panel h3 { font-size:14px; margin:0 0 8px; color:var(--muted); font-weight:600; }
+  svg { display:block; width:100%; height:auto; }
+  #graph { border:1px solid var(--line); border-radius:8px; background:#fcfdfe; }
+  .legend { display:flex; flex-wrap:wrap; gap:6px 14px; margin-top:8px; font-size:13px; }
+  .chip { display:inline-block; width:12px; height:12px; border-radius:3px; vertical-align:-1px; margin-right:5px; }
+  .gridwrap { overflow-x:auto; }
+  table.grid { border-collapse:separate; border-spacing:4px; }
+  table.grid th { font-size:12px; color:var(--muted); font-weight:600; padding:0 6px; white-space:nowrap; }
+  table.grid td { width:56px; height:38px; text-align:center; border-radius:6px; background:#eef1f4; font-weight:600; font-size:14px; }
+  table.grid td.hl, table.grid td.cur { outline:3px solid var(--ink); outline-offset:-3px; }
+  .controls { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin:14px 0 4px; }
+  .status { font-size:14px; color:var(--muted); margin-left:6px; }
+  .lists { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:16px; margin-top:16px; }
+  .slotline { padding:3px 0; font-variant-numeric:tabular-nums; }
+  pre { background:var(--bg); border:1px solid var(--line); border-radius:6px; padding:10px; overflow-x:auto; font-size:13px; margin:8px 0 0; }
+  .charts { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:16px; }
+  .note { font-size:13px; color:var(--muted); }
+  .muted { color:var(--muted); }
+  ul.how { margin:0; padding-left:18px; } ul.how li { margin-bottom:6px; }
+  @media (max-width: 820px) { .viz, .lists, .charts { grid-template-columns:minmax(0,1fr); } }
+</style>
+</head>
+<body>
+<main>
+  <h1>Exam Timetable Scheduling</h1>
+  <p class="sub" id="sub"></p>
+
+  <section>
+    <h2>Output 1 &middot; Minimum number of slots</h2>
+    <div class="gridwrap"><table class="data" id="summary"></table></div>
+    <p class="note" id="lbnote"></p>
+  </section>
+
+  <section>
+    <h2>Timetable &amp; conflict graph</h2>
+    <div class="tabs" id="tabs"></div>
+    <div class="viz">
+      <div class="panel">
+        <h3>Conflict graph &mdash; node colour = time slot (hover a course to see its conflicts)</h3>
+        <svg id="graph" viewBox="0 0 620 480"></svg>
+        <div class="legend" id="legend"></div>
+      </div>
+      <div class="panel">
+        <h3>Timetable grid &mdash; same colours</h3>
+        <div class="gridwrap"><table class="grid" id="grid"></table></div>
+      </div>
+    </div>
+    <div class="controls">
+      <button id="reset">&#8634; Reset</button>
+      <button id="back">&#9664; Step</button>
+      <button id="play">&#9654; Play</button>
+      <button id="fwd">Step &#9654;</button>
+      <button id="end">Show all</button>
+      <label class="note">speed <input type="range" id="speed" min="1" max="10" value="4"></label>
+      <span class="status" id="status"></span>
+    </div>
+    <div class="lists">
+      <div>
+        <h3 style="font-size:15px;margin:8px 0">Output 2 &middot; Slot-wise list of courses</h3>
+        <div id="slotlist"></div>
+      </div>
+      <div>
+        <h3 style="font-size:15px;margin:8px 0">Output 3 &middot; CSV timetable</h3>
+        <button id="dl">Download CSV</button> <span class="note" id="dlname"></span>
+        <pre id="csv"></pre>
+      </div>
+    </div>
+  </section>
+
+  <section id="benchsec">
+    <h2>Algorithm comparison as N increases</h2>
+    <p class="note" id="benchnote"></p>
+    <div class="charts">
+      <div><h3 class="note" style="margin:0 0 4px">Slots used (average)</h3><svg id="chart1" viewBox="0 0 520 310"></svg><div class="legend" id="leg1"></div></div>
+      <div><h3 class="note" style="margin:0 0 4px">Running time, ms (log scale)</h3><svg id="chart2" viewBox="0 0 520 310"></svg><div class="legend" id="leg2"></div></div>
+    </div>
+    <div class="gridwrap" style="margin-top:14px"><table class="data" id="benchtable"></table></div>
+  </section>
+
+  <section>
+    <h2>How the algorithms work</h2>
+    <ul class="how">
+      <li><b>Welsh-Powell</b> (greedy): sort courses by number of conflicts. Fill Slot 1 by walking down the list, taking every course that has no conflict with the slot while halls are free; repeat for Slot 2, 3, &hellip;</li>
+      <li><b>DSatur</b> (greedy): always schedule next the course whose conflicting courses already use the most different slots, and put it in the lowest slot with no conflict and a free hall.</li>
+      <li><b>Branch &amp; Bound</b> (exact): starts from the best greedy answer and searches only for timetables with fewer slots. It stops at the lower bound (largest clique found, or &lceil;N/R&rceil;), never opens more than one new slot per step, and cuts branches that already need too many slots or don't have enough free halls left. Running time is exponential in the worst case, so a time limit applies. A result that hit the limit is marked <i>not proven optimal</i>.</li>
+      <li><b>Proven optimal</b>: a greedy result counts as proven when it equals the lower bound or the exact optimum.</li>
+    </ul>
+  </section>
+</main>
+
+<script id="data" type="application/json">{"n":14,"R":3,"lb":5,"source":"sample_input.txt","labels":[1,2,3,4,5,6,7,8,9,10,11,12,13,14],"edges":[[0,4],[0,6],[0,9],[0,13],[1,2],[1,5],[1,6],[1,10],[1,12],[2,7],[2,8],[2,10],[2,12],[2,13],[3,6],[3,7],[3,10],[3,11],[3,13],[4,5],[4,6],[4,7],[4,8],[4,9],[4,11],[4,12],[5,6],[5,7],[5,8],[5,9],[5,10],[5,11],[5,12],[6,10],[6,11],[6,12],[7,8],[7,9],[7,10],[8,9],[8,10],[8,12],[8,13],[9,10],[9,11],[9,12],[9,13],[10,11],[10,12],[10,13]],"pos":[[0.6295,1.0],[0.4154,0.0],[0.9235,0.1555],[0.4392,0.8781],[0.0555,0.5885],[0.0825,0.3335],[0.2433,0.5694],[0.4233,0.3809],[0.715,0.3315],[0.4913,0.6603],[0.596,0.4824],[0.0,0.8073],[0.3428,0.1954],[1.0,0.674]],"results":[{"name":"Welsh-Powell","slot":[5,3,1,1,0,1,2,4,3,2,0,3,4,4],"k":6,"ms":0.03071799994813773,"optimal":false,"proof":"heuristic - no optimality guarantee","order":[[10,0],[4,0],[5,1],[2,1],[3,1],[9,2],[6,2],[8,3],[11,3],[1,3],[12,4],[7,4],[13,4],[0,5]],"nodes":0,"csv":"Slot,Hall 1,Hall 2,Hall 3\nSlot 1,5,11,\nSlot 2,3,4,6\nSlot 3,7,10,\nSlot 4,2,9,12\nSlot 5,8,13,14\nSlot 6,1,,\n"},{"name":"DSatur","slot":[5,3,1,1,0,1,2,4,3,2,0,3,4,4],"k":6,"ms":0.08209700001771125,"optimal":false,"proof":"heuristic - no optimality guarantee","order":[[10,0],[5,1],[9,2],[8,3],[12,4],[4,0],[7,4],[6,2],[1,3],[2,1],[13,4],[11,3],[3,1],[0,5]],"nodes":0,"csv":"Slot,Hall 1,Hall 2,Hall 3\nSlot 1,5,11,\nSlot 2,3,4,6\nSlot 3,7,10,\nSlot 4,2,9,12\nSlot 5,8,13,14\nSlot 6,1,,\n"},{"name":"Branch & Bound","slot":[1,3,2,1,0,1,2,4,3,2,0,3,4,4],"k":5,"ms":0.2722009999160946,"optimal":true,"proof":"found a timetable matching lower bound 5","order":[[10,0],[5,1],[9,2],[8,3],[12,4],[4,0],[7,4],[6,2],[1,3],[2,2],[11,3],[3,1],[13,4],[0,1]],"nodes":14,"csv":"Slot,Hall 1,Hall 2,Hall 3\nSlot 1,5,11,\nSlot 2,1,4,6\nSlot 3,3,7,10\nSlot 4,2,9,12\nSlot 5,8,13,14\n"}],"bench":{"density":0.5,"time_limit":2.0,"rows":[{"N":10,"R":2,"seeds":3,"lb":5.0,"slots":[5.0,5.0,5.0],"ms":[0.015731000038006943,0.046929000025860056,0.053817000017867635],"bb_proven":3},{"N":20,"R":4,"seeds":3,"lb":5.666666666666667,"slots":[6.333333333333333,6.0,5.666666666666667],"ms":[0.03881200003282478,0.12819800000822093,0.6773413333197217],"bb_proven":3},{"N":30,"R":6,"seeds":3,"lb":6.333333333333333,"slots":[8.0,7.666666666666667,7.333333333333333],"ms":[0.06230199998450796,0.2627810000224902,1.599493999947299],"bb_proven":3},{"N":40,"R":8,"seeds":3,"lb":7.333333333333333,"slots":[11.0,10.333333333333334,9.0],"ms":[0.11423799999950764,0.4180670000171934,17.256330333339065],"bb_proven":3},{"N":50,"R":10,"seeds":3,"lb":7.666666666666667,"slots":[11.666666666666666,11.0,10.0],"ms":[0.10321366664811649,0.44347433333769004,188.96252433334362],"bb_proven":3},{"N":60,"R":12,"seeds":3,"lb":8.0,"slots":[13.666666666666666,13.0,11.0],"ms":[0.14080133333512398,0.5269443333115001,1962.0061016666643],"bb_proven":1}]}}</script>
+<script>
+const D = JSON.parse(document.getElementById('data').textContent);
+const $ = id => document.getElementById(id);
+const PAL = ["#4e79a7","#f28e2b","#59a14f","#e15759","#b07aa1","#76b7b2","#edc948","#ff9da7",
+             "#9c755f","#86bcb6","#d37295","#8cd17d","#a0cbe8","#ffbe7d","#499894","#fabfd2",
+             "#b6992d","#d4a6c8","#f1ce63","#79706e"];
+const GREY = "#d0d7de";
+function hslHex(h,s,l){ s/=100; l/=100; const k=n=>(n+h/30)%12, a=s*Math.min(l,1-l);
+  const f=n=>Math.round(255*(l-a*Math.max(-1,Math.min(k(n)-3,9-k(n),1)))).toString(16).padStart(2,'0');
+  return "#"+f(0)+f(8)+f(4); }
+const color = s => s < 0 ? GREY : (s < PAL.length ? PAL[s] : hslHex((s*137.5)%360, 55, 58));
+function ink(hex){ const r=parseInt(hex.slice(1,3),16), g=parseInt(hex.slice(3,5),16), b=parseInt(hex.slice(5,7),16);
+  return (0.299*r+0.587*g+0.114*b) > 150 ? "#1f2328" : "#ffffff"; }
+const esc = s => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;");
+
+const n = D.n, R = D.R, L = D.labels;
+const adj = Array.from({length:n}, () => new Set());
+D.edges.forEach(([u,v]) => { adj[u].add(v); adj[v].add(u); });
+
+$("sub").textContent = `${n} courses · ${D.edges.length} conflicts · ${R} halls per slot · input: ${D.source}`;
+$("lbnote").innerHTML = `Lower bound: no timetable can use fewer than <b>${D.lb}</b> slots ` +
+  `(largest group of mutually conflicting courses found, or ⌈N/R⌉ = ${Math.ceil(n/R)}). Click a row to view that timetable.`;
+
+let cur = D.results.length - 1, step = 0, timer = null, hover = -1;
+
+function summary(){
+  let h = `<tr><th>Algorithm</th><th style="text-align:right">Slots</th><th>Proven optimal</th><th style="text-align:right">Time</th><th>Reason</th></tr>`;
+  D.results.forEach((r,i) => {
+    h += `<tr class="pick ${i===cur?'sel':''}" data-i="${i}"><td><b>${r.name}</b></td><td class="num"><b>${r.k}</b></td>
+      <td><span class="badge ${r.optimal?'yes':'no'}">${r.optimal?'Yes':'No'}</span></td>
+      <td class="num">${r.ms < 1 ? r.ms.toFixed(3) : r.ms.toFixed(1)} ms</td>
+      <td class="muted">${esc(r.proof)}${r.nodes ? ` · ${r.nodes.toLocaleString()} search nodes` : ''}</td></tr>`;
+  });
+  $("summary").innerHTML = h;
+  document.querySelectorAll("#summary tr.pick").forEach(tr => tr.onclick = () => select(+tr.dataset.i));
+}
+
+function tabs(){
+  $("tabs").innerHTML = D.results.map((r,i) =>
+    `<button class="${i===cur?'on':''}" data-i="${i}">${r.name} · ${r.k} slots</button>`).join("");
+  document.querySelectorAll("#tabs button").forEach(b => b.onclick = () => select(+b.dataset.i));
+}
+
+function select(i){ stop(); cur = i; step = D.results[i].order.length; summary(); tabs(); staticParts(); draw(); }
+
+function staticParts(){
+  const r = D.results[cur];
+  const groups = Array.from({length:r.k}, () => []);
+  r.slot.forEach((s,v) => groups[s].push(v));
+  $("legend").innerHTML = groups.map((g,s) => `<span><span class="chip" style="background:${color(s)}"></span>Slot ${s+1}</span>`).join("");
+  $("slotlist").innerHTML = groups.map((g,s) =>
+    `<div class="slotline"><span class="chip" style="background:${color(s)}"></span><b>Slot ${s+1}:</b> ${g.map(v=>L[v]).join(", ")}</div>`).join("");
+  $("csv").textContent = r.csv;
+  $("dlname").textContent = fileName(r);
+}
+const fileName = r => "timetable_" + r.name.toLowerCase().replace(/[^a-z]+/g,"_") + ".csv";
+$("dl").onclick = () => {
+  const r = D.results[cur], a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([r.csv], {type:"text/csv"}));
+  a.download = fileName(r); a.click(); URL.revokeObjectURL(a.href);
+};
+
+function draw(){
+  const r = D.results[cur], ord = r.order;
+  const slot = new Array(n).fill(-1);
+  for (let i = 0; i < step; i++) slot[ord[i][0]] = ord[i][1];
+  const last = step > 0 ? ord[step-1][0] : -1;
+  const focus = hover >= 0 ? hover : -1;
+
+  // graph
+  const W = 620, H = 480, pad = 28, rad = n <= 30 ? 15 : n <= 60 ? 11 : 7;
+  const P = D.pos.map(([x,y]) => [pad + x*(W-2*pad), pad + y*(H-2*pad)]);
+  let s = "";
+  D.edges.forEach(([u,v]) => {
+    const on = focus >= 0 && (u===focus || v===focus);
+    s += `<line x1="${P[u][0]}" y1="${P[u][1]}" x2="${P[v][0]}" y2="${P[v][1]}" stroke="${on?'#1f2328':'#8c959f'}" stroke-opacity="${on?0.9:(focus>=0?0.12:0.35)}" stroke-width="${on?2:1}"/>`;
+  });
+  for (let v = 0; v < n; v++) {
+    const c = color(slot[v]), dim = focus >= 0 && v !== focus && !adj[focus].has(v);
+    const big = v === last && step < ord.length ? 1.45 : 1;
+    s += `<g data-v="${v}" style="cursor:pointer" opacity="${dim?0.3:1}"><circle cx="${P[v][0]}" cy="${P[v][1]}" r="${rad*big}" fill="${c}" stroke="#1f2328" stroke-width="${v===last&&step<ord.length||v===focus?3:1}"/>`;
+    if (rad >= 9) s += `<text x="${P[v][0]}" y="${P[v][1]+4}" text-anchor="middle" font-size="${rad>=15?12:10}" font-weight="600" fill="${ink(c)}" pointer-events="none">${L[v]}</text>`;
+    s += `<title>Course ${L[v]}${slot[v]>=0?' → Slot '+(slot[v]+1):''} · ${adj[v].size} conflicts</title></g>`;
+  }
+  $("graph").innerHTML = s;
+  $("graph").querySelectorAll("g[data-v]").forEach(g => {
+    g.onmouseenter = () => { hover = +g.dataset.v; draw(); };
+    g.onmouseleave = () => { hover = -1; draw(); };
+  });
+
+  // grid
+  const rows = Array.from({length:r.k}, () => []);
+  for (let i = 0; i < step; i++) rows[ord[i][1]].push(ord[i][0]);
+  let g = "<tr><th></th>" + Array.from({length:R}, (_,h) => `<th>Hall ${h+1}</th>`).join("") + "</tr>";
+  rows.forEach((row,sl) => {
+    g += `<tr><th>Slot ${sl+1}</th>`;
+    for (let h = 0; h < R; h++) {
+      if (h < row.length) {
+        const v = row[h], c = color(sl);
+        const cls = (v === focus ? "hl" : "") + (v === last && step < ord.length ? " cur" : "");
+        g += `<td class="${cls}" data-v="${v}" style="background:${c};color:${ink(c)};cursor:pointer">${L[v]}</td>`;
+      } else g += "<td></td>";
+    }
+    g += "</tr>";
+  });
+  $("grid").innerHTML = g;
+  $("grid").querySelectorAll("td[data-v]").forEach(td => {
+    td.onmouseenter = () => { hover = +td.dataset.v; draw(); };
+    td.onmouseleave = () => { hover = -1; draw(); };
+  });
+
+  $("status").textContent = step === 0 ? `Step 0/${ord.length}: nothing scheduled yet`
+    : step === ord.length ? `All ${ord.length} courses scheduled in ${r.k} slots (assignment order replayable)`
+    : `Step ${step}/${ord.length}: course ${L[ord[step-1][0]]} → Slot ${ord[step-1][1]+1}`;
+  $("play").innerHTML = timer ? "&#10073;&#10073; Pause" : "&#9654; Play";
+}
+
+function stop(){ if (timer) { clearInterval(timer); timer = null; } }
+function play(){
+  const r = D.results[cur];
+  if (timer) { stop(); draw(); return; }
+  if (step >= r.order.length) step = 0;
+  timer = setInterval(() => {
+    if (step >= r.order.length) { stop(); draw(); return; }
+    step++; draw();
+  }, 1100 / +$("speed").value);
+  draw();
+}
+$("play").onclick = play;
+$("reset").onclick = () => { stop(); step = 0; draw(); };
+$("back").onclick = () => { stop(); step = Math.max(0, step-1); draw(); };
+$("fwd").onclick  = () => { stop(); step = Math.min(D.results[cur].order.length, step+1); draw(); };
+$("end").onclick  = () => { stop(); step = D.results[cur].order.length; draw(); };
+$("speed").oninput = () => { if (timer) { stop(); play(); } };
+
+// ---------- comparison charts ----------
+const SER = [{name:"Welsh-Powell", c:"#e15759"}, {name:"DSatur", c:"#4e79a7"}, {name:"Branch & Bound", c:"#59a14f"}];
+function lineChart(svg, xs, series, logY){
+  const W = 520, H = 310, m = {l:52, r:14, t:12, b:40};
+  const all = series.flatMap(s => s.v).filter(v => v > 0 || !logY);
+  let lo = Math.min(...all), hi = Math.max(...all), ticks = [];
+  if (logY) {
+    lo = Math.pow(10, Math.floor(Math.log10(lo))); hi = Math.pow(10, Math.ceil(Math.log10(hi)));
+    for (let t = lo; t <= hi * 1.001; t *= 10) ticks.push(t);
+  } else {
+    lo = Math.max(0, Math.floor(lo) - 1); hi = Math.ceil(hi) + 1;
+    const st = Math.max(1, Math.ceil((hi - lo) / 6));
+    for (let t = lo; t <= hi; t += st) ticks.push(t);
+  }
+  const X = x => xs.length > 1 ? m.l + (x - xs[0]) / (xs[xs.length-1] - xs[0]) * (W - m.l - m.r) : (W/2);
+  const Y = y => logY ? H - m.b - (Math.log10(Math.max(y, lo)) - Math.log10(lo)) / (Math.log10(hi) - Math.log10(lo)) * (H - m.t - m.b)
+                      : H - m.b - (y - lo) / (hi - lo) * (H - m.t - m.b);
+  const fmt = t => logY ? (t >= 1 ? t.toLocaleString() : String(+t.toPrecision(1))) : t;
+  let s = "";
+  ticks.forEach(t => s += `<line x1="${m.l}" x2="${W-m.r}" y1="${Y(t)}" y2="${Y(t)}" stroke="#d8dee4"/>
+    <text x="${m.l-6}" y="${Y(t)+4}" text-anchor="end" font-size="11" fill="#636c76">${fmt(t)}</text>`);
+  xs.forEach(x => s += `<text x="${X(x)}" y="${H-m.b+16}" text-anchor="middle" font-size="11" fill="#636c76">${x}</text>`);
+  s += `<text x="${(W+m.l)/2}" y="${H-6}" text-anchor="middle" font-size="12" fill="#636c76">Number of courses N</text>`;
+  series.forEach(se => {
+    s += `<polyline fill="none" stroke="${se.c}" stroke-width="${se.dash?1.5:2.5}" ${se.dash?'stroke-dasharray="5 4"':''} points="${xs.map((x,i)=>X(x)+','+Y(se.v[i])).join(' ')}"/>`;
+    if (!se.dash) xs.forEach((x,i) => {
+      const hollow = se.hollow && se.hollow[i];
+      s += `<circle cx="${X(x)}" cy="${Y(se.v[i])}" r="4.5" fill="${hollow?'#fff':se.c}" stroke="${se.c}" stroke-width="2"><title>${se.name}, N=${x}: ${logY ? se.v[i].toFixed(3)+' ms' : se.v[i].toFixed(2)+' slots'}${hollow?' (time limit hit)':''}</title></circle>`;
+    });
+  });
+  svg.innerHTML = s;
+}
+function legend(el, items){ el.innerHTML = items.map(it =>
+  `<span><span class="chip" style="background:${it.c};${it.dash?'height:3px;vertical-align:3px':''}"></span>${it.name}</span>`).join(""); }
+
+if (D.bench && D.bench.rows.length) {
+  const B = D.bench, rows = B.rows, xs = rows.map(r => r.N);
+  const hollow = rows.map(r => r.bb_proven < r.seeds);
+  $("benchnote").innerHTML = `Random conflict graphs with edge density ${B.density}, R = ⌈N/5⌉ halls, averaged over ${rows[0].seeds} graphs per N. ` +
+    `Branch &amp; Bound time limit ${B.time_limit}s per graph; a hollow green marker means it hit the limit on at least one graph (result not proven optimal).`;
+  lineChart($("chart1"), xs, [...SER.map((se,k) => ({...se, v: rows.map(r => r.slots[k]), hollow: k===2?hollow:null})),
+    {name:"Lower bound", c:"#1f2328", dash:true, v: rows.map(r => r.lb)}], false);
+  legend($("leg1"), [...SER, {name:"Lower bound", c:"#1f2328", dash:true}]);
+  lineChart($("chart2"), xs, SER.map((se,k) => ({...se, v: rows.map(r => Math.max(r.ms[k], 0.001)), hollow: k===2?hollow:null})), true);
+  legend($("leg2"), SER);
+  let t = `<tr><th>N</th><th>R</th><th style="text-align:right">WP slots</th><th style="text-align:right">DSatur slots</th><th style="text-align:right">B&amp;B slots</th><th style="text-align:right">Lower bound</th>
+    <th style="text-align:right">WP ms</th><th style="text-align:right">DSatur ms</th><th style="text-align:right">B&amp;B ms</th><th>B&amp;B proven</th></tr>`;
+  rows.forEach(r => t += `<tr><td>${r.N}</td><td>${r.R}</td>${r.slots.map(v=>`<td class="num">${v.toFixed(2)}</td>`).join("")}
+    <td class="num">${r.lb.toFixed(2)}</td>${r.ms.map(v=>`<td class="num">${v<1?v.toFixed(3):v.toFixed(1)}</td>`).join("")}<td>${r.bb_proven}/${r.seeds}</td></tr>`);
+  $("benchtable").innerHTML = t;
+} else {
+  $("benchsec").innerHTML = `<h2>Algorithm comparison as N increases</h2><p class="note">Benchmark was skipped (--no-benchmark).</p>`;
+}
+
+select(cur);
+</script>
+</body>
+</html>

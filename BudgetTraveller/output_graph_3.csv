@@ -1,0 +1,5 @@
+from,to,price,on_path,coupon,paid,leg
+1,2,10,,,,
+2,3,10,,,,
+3,4,10,,,,
+# N=4 K=1 C=0 min_cost=-1 stops_used=- coupons_used=- route=none
